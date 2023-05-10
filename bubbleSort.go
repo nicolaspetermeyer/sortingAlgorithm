@@ -1,16 +1,36 @@
 package main
 
-import "time"
+import "fmt"
 
-func bubbleSort(data []float64) {
-	for i := 0; i < len(data)-1; i++ {
-		for j := 0; j < len(data)-i-1; j++ {
-			if data[j] > data[j+1] {
-				// swap
-				data[j], data[j+1] = data[j+1], data[j]
-			}
-		}
-		time.Sleep(100 * time.Millisecond)
+func bubbleSortStep(g *Game, data []float64, delay int, i int, j int, k int) {
+	if i >= len(data)-1 {
+		g.sorted = true
 		return
 	}
+
+	lastUnsorted := len(data) - 1 - g.numSorted
+	if i >= lastUnsorted {
+		g.numSorted++
+		return
+	}
+
+	if data[i] > data[i+1] {
+		//swap
+		data[i], data[i+1] = data[i+1], data[i]
+
+	}
+	if i < len(data)-1 {
+		g.j = int(data[i])
+		g.k = int(data[i+1])
+	}
+
+	i++
+	g.i = i
+	Sleep(delay)
+	if lastUnsorted == 1 {
+		g.sorted = true
+	}
+	fmt.Println(g.sorted)
+	fmt.Println(lastUnsorted)
+
 }

@@ -1,18 +1,13 @@
 package main
 
 import (
-	"bufio"
 	"fmt"
 	"image/color"
-	"log"
 	"math/rand"
-	"os"
-	"strconv"
-	"strings"
 	"time"
 
-	"github.com/hajimehoshi/ebiten"
-	"github.com/hajimehoshi/ebiten/ebitenutil"
+	"github.com/hajimehoshi/ebiten/v2"
+	"github.com/hajimehoshi/ebiten/v2/vector"
 )
 
 var pl = fmt.Println
@@ -22,20 +17,22 @@ const (
 	HEIGTH = 720
 )
 
+// type bar struct {
+// 	rect  *ebiten.Image
+// 	color color.RGBA
+// }
 
 type Game struct {
-	
-	data   			[]float64
-	j, k   			int
-	delay 			int;
-	//sortAlgorithm 	string;
-	sorted	 		bool;
+	data      []float64
+	i, j, k   int
+	delay     int
+	sorted    bool
+	numSorted int
 }
 
 type input struct {
 	algorithm string
-	delay    int
-	//state   int
+	delay     int
 }
 
 var (
@@ -43,57 +40,58 @@ var (
 	barWidth   float64
 	barHeight  float64
 	barSpacing = 3.0
+	antialias  = true
 )
 
-//---------------- Choose Algorithm  -----------------
-func readAlgorithm(reader *bufio.Reader) string {
-	pl("Choose algorithm: ")
-	pl("1. Bubble sort")
-	pl("2. Merge sort")
-	pl("3. Heap sort")
-	pl("4. Quick sort")
+// // ---------------- Choose Algorithm  -----------------
+// func readAlgorithm(reader *bufio.Reader) string {
+// 	pl("Choose algorithm: ")
+// 	pl("1. Bubble sort")
+// 	pl("2. Merge sort")
+// 	pl("3. Heap sort")
+// 	pl("4. Quick sort")
 
-	//Read string until newline
-	algorithm, err := reader.ReadString('\n')
-	if err != nil {
-		log.Fatal(err)
-	} else {
-		fmt.Println("You chose: " + algorithm)
-	}
-	return strings.TrimSpace(algorithm)
-}
+// 	//Read string until newline
+// 	algorithm, err := reader.ReadString('\n')
+// 	if err != nil {
+// 		log.Fatal(err)
+// 	} else {
+// 		fmt.Println("You chose: " + algorithm)
+// 	}
+// 	return strings.TrimSpace(algorithm)
+// }
 
-//----------------- Read Dataset Size  -----------------
-func readCount(reader *bufio.Reader) int {
-	pl("Enter n: ")
+// // ----------------- Read Dataset Size  -----------------
+// func readCount(reader *bufio.Reader) int {
+// 	pl("Enter n: ")
 
-	n, _ := reader.ReadString('\n')
-	n = strings.TrimSpace(n)
-	size, err := strconv.Atoi(n)
-	if err != nil {
-		log.Fatal(err)
-	} else {
-		fmt.Println("You entered: " + n)
-	}
-	return size
-}
+// 	n, _ := reader.ReadString('\n')
+// 	n = strings.TrimSpace(n)
+// 	size, err := strconv.Atoi(n)
+// 	if err != nil {
+// 		log.Fatal(err)
+// 	} else {
+// 		fmt.Println("You entered: " + n)
+// 	}
+// 	return size
+// }
 
-//----------------- Read Delay  -----------------
-func readDelay(reader *bufio.Reader) int {
-	pl("Enter delay in ms: ")
+// // ----------------- Read Delay  -----------------
+// func readDelay(reader *bufio.Reader) int {
+// 	pl("Enter delay in ms: ")
 
-	n, _ := reader.ReadString('\n')
-	n = strings.TrimSpace(n)
-	delay, err := strconv.Atoi(n)
-	if err != nil {
-		log.Fatal(err)
-	} else {
-		fmt.Println("You entered: " + n)
-	}
-	return delay
-}
+// 	n, _ := reader.ReadString('\n')
+// 	n = strings.TrimSpace(n)
+// 	delay, err := strconv.Atoi(n)
+// 	if err != nil {
+// 		log.Fatal(err)
+// 	} else {
+// 		fmt.Println("You entered: " + n)
+// 	}
+// 	return delay
+// }
 
-//----------------- Create Slice  -----------------
+// ----------------- Create Slice  -----------------
 func createSlice(size int) []float64 {
 	data := make([]float64, size)
 	for i := 0; i < len(data); i++ {
@@ -106,76 +104,78 @@ func createSlice(size int) []float64 {
 	return data
 }
 
-//----------------- Sleep  -----------------
+// ----------------- Sleep  -----------------
 func Sleep(n int) {
-	time.Sleep(time.Duration(n) * time.Millisecond)
+	time.Sleep(time.Duration(n) * time.Microsecond)
 }
 
-//----------------- Update Game -----------------
-func (g *Game) Update(screen *ebiten.Image) error {
+// ----------------- Update Game -----------------
+func (g *Game) Update() error {
+
 	if g.sorted {
 		return nil
 	}
 
-	bubbleSort(g.data)
+	bubbleSortStep(g, g.data, g.delay, g.i, g.j, g.k)
+	if g.i >= len(data)-1-g.numSorted {
+		g.i = 0
+		g.numSorted++
+	}
+
 	return nil
-} 
-	
-	
+}
 
-
-
-
-//----------------- Draw Game -----------------
+// ----------------- Draw Game -----------------
 func (g *Game) Draw(screen *ebiten.Image) {
 
-
-	for i, num := range data {
+	for i, num := range g.data {
 		x := 10 + (barWidth+barSpacing)*float64(i)
 		y := HEIGTH - num*barHeight
 
-		var c color.RGBA
-		if g.k < len(g.data)-1 {
-			if i == g.j || i == g.j+1 {
-				
-			} else {
-				c = color.RGBA{255, 255, 255, 255}
-			}
+		if num == float64(g.j) {
+			vector.DrawFilledRect(screen, float32(x), float32(y), float32(barWidth), float32(num*barHeight), color.RGBA{0xff, 0x00, 0x00, 0xff}, antialias)
+		} else if num == float64(g.k) {
+			vector.DrawFilledRect(screen, float32(x), float32(y), float32(barWidth), float32(num*barHeight), color.RGBA{0x00, 0x00, 0xff, 0xff}, antialias)
 		} else {
-			c = color.RGBA{0, 255, 0, 255}
+			vector.DrawFilledRect(screen, float32(x), float32(y), float32(barWidth), float32(num*barHeight), color.White, antialias)
 		}
-		
-		ebitenutil.DrawRect(screen, float64(x), float64(y), float64(barWidth), float64(num*barHeight), color.White)
-
+	}
+	if g.sorted {
+		for i, num := range g.data {
+			x := 10 + (barWidth+barSpacing)*float64(i)
+			y := HEIGTH - num*barHeight
+			vector.DrawFilledRect(screen, float32(x), float32(y), float32(barWidth), float32(num*barHeight), color.RGBA{0x00, 0xff, 0x00, 0xff}, antialias)
+		}
 	}
 }
+
 //----------------- Game Layout -----------------
 
 func (g *Game) Layout(outsideWidth, outsideHeight int) (screenWidth, screenHeight int) {
 	return WIDTH, HEIGTH
 }
 
-
 func main() {
 
-	reader := bufio.NewReader(os.Stdin)
+	//reader := bufio.NewReader(os.Stdin)
 	var input input
-	input.algorithm = readAlgorithm(reader)
-	n := readCount(reader)
+	// input.algorithm = readAlgorithm(reader)
+	// n := readCount(reader)
+	// data = createSlice(n)
+	// input.delay = readDelay(reader)
+
+	input.algorithm = "1"
+	n := 20
 	data = createSlice(n)
-	input.delay = readDelay(reader)
+	input.delay = 1
 
 	barWidth = (float64(WIDTH) - 20 - (float64(n) * barSpacing)) / float64(n)
 	barHeight = float64(HEIGTH) / float64(n)
 
-	
-
-	
-	
 	switch input.algorithm {
 	case "1":
-		bubbleSort(data)
-		
+	//bubbleSort(data, input.delay, progress)
+
 	// case "2":
 	// 	data = mergeSort(data)
 
@@ -187,23 +187,22 @@ func main() {
 	// 		fmt.Scanln()
 	// 	case "4":
 	// 		pl("Quick sort")
-		default: 
+	default:
 		pl("Invalid input")
 		return
 	}
-	
 
 	//Set up the game window
 	ebiten.SetWindowSize(WIDTH, HEIGTH)
 	ebiten.SetWindowTitle("Shuffled Integers")
 	game := &Game{
-		data:   data,
-		k:      0,
-		j:      0,
-		delay:  input.delay,
-		sorted: false,
-		
-
+		data:      data,
+		i:         0,
+		j:         0,
+		k:         0,
+		delay:     input.delay,
+		sorted:    false,
+		numSorted: 0,
 	}
 
 	//Start the game loop
