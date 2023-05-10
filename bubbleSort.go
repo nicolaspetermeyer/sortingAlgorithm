@@ -1,8 +1,6 @@
 package main
 
-import (
-	"time"
-)
+import "time"
 
 func bubbleSort(data []float64) {
 	for i := 0; i < len(data)-1; i++ {
@@ -12,7 +10,6 @@ func bubbleSort(data []float64) {
 				data[j], data[j+1] = data[j+1], data[j]
 			}
 		}
-
 		time.Sleep(100 * time.Millisecond)
 		return
 	}
