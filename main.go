@@ -28,11 +28,12 @@ type Game struct {
 	delay     int
 	sorted    bool
 	numSorted int
-}
-
-type input struct {
 	algorithm string
-	delay     int
+
+	varHeight float64
+	tmp       []float64
+	left      []float64 // left split to be compared (highlight)
+	right     []float64 // right split to be compared (highlight)
 }
 
 var (
@@ -41,6 +42,8 @@ var (
 	barHeight  float64
 	barSpacing = 3.0
 	antialias  = true
+	algorithm  string
+	delay      int
 )
 
 // // ---------------- Choose Algorithm  -----------------
@@ -106,7 +109,7 @@ func createSlice(size int) []float64 {
 
 // ----------------- Sleep  -----------------
 func Sleep(n int) {
-	time.Sleep(time.Duration(n) * time.Microsecond)
+	time.Sleep(time.Duration(n) * time.Second)
 }
 
 // ----------------- Update Game -----------------
@@ -116,40 +119,53 @@ func (g *Game) Update() error {
 		return nil
 	}
 
-	bubbleSortStep(g, g.data, g.delay, g.i, g.j, g.k)
-	if g.i >= len(data)-1-g.numSorted {
-		g.i = 0
-		g.numSorted++
+	if g.algorithm == "1" {
+		bubbleSortStep(g, g.data, g.delay, g.i, g.j, g.k)
+		if g.i >= len(data)-1-g.numSorted {
+			g.i = 0
+			g.numSorted++
+		}
+	} else if g.algorithm == "2" {
+		mergeSort(g, g.data)
+		g.sorted = true
 	}
-
 	return nil
 }
 
 // ----------------- Draw Game -----------------
 func (g *Game) Draw(screen *ebiten.Image) {
 
-	for i, num := range g.data {
-		x := 10 + (barWidth+barSpacing)*float64(i)
-		y := HEIGTH - num*barHeight
-
-		if num == float64(g.j) {
-			vector.DrawFilledRect(screen, float32(x), float32(y), float32(barWidth), float32(num*barHeight), color.RGBA{0xff, 0x00, 0x00, 0xff}, antialias)
-		} else if num == float64(g.k) {
-			vector.DrawFilledRect(screen, float32(x), float32(y), float32(barWidth), float32(num*barHeight), color.RGBA{0x00, 0x00, 0xff, 0xff}, antialias)
-		} else {
-			vector.DrawFilledRect(screen, float32(x), float32(y), float32(barWidth), float32(num*barHeight), color.White, antialias)
-		}
-	}
-	if g.sorted {
+	if g.algorithm == "1" {
 		for i, num := range g.data {
 			x := 10 + (barWidth+barSpacing)*float64(i)
 			y := HEIGTH - num*barHeight
-			vector.DrawFilledRect(screen, float32(x), float32(y), float32(barWidth), float32(num*barHeight), color.RGBA{0x00, 0xff, 0x00, 0xff}, antialias)
+
+			if num == float64(g.j) {
+				vector.DrawFilledRect(screen, float32(x), float32(y), float32(barWidth), float32(num*barHeight), color.RGBA{0xff, 0x00, 0x00, 0xff}, antialias)
+			} else if num == float64(g.k) {
+				vector.DrawFilledRect(screen, float32(x), float32(y), float32(barWidth), float32(num*barHeight), color.RGBA{0x00, 0x00, 0xff, 0xff}, antialias)
+			} else {
+				vector.DrawFilledRect(screen, float32(x), float32(y), float32(barWidth), float32(num*barHeight), color.White, antialias)
+			}
+		}
+		if g.sorted {
+			for i, num := range g.data {
+				x := 10 + (barWidth+barSpacing)*float64(i)
+				y := HEIGTH - num*barHeight
+				vector.DrawFilledRect(screen, float32(x), float32(y), float32(barWidth), float32(num*barHeight), color.RGBA{0x00, 0xff, 0x00, 0xff}, antialias)
+			}
+		}
+	} else if g.algorithm == "2" {
+		for i, num := range g.data {
+
+			x := 10 + (barWidth+barSpacing)*float64(i)
+			y := HEIGTH - num*barHeight
+			vector.DrawFilledRect(screen, float32(x), float32(y), float32(barWidth), float32(num*barHeight), color.White, antialias)
 		}
 	}
 }
 
-//----------------- Game Layout -----------------
+// //----------------- Game Layout -----------------
 
 func (g *Game) Layout(outsideWidth, outsideHeight int) (screenWidth, screenHeight int) {
 	return WIDTH, HEIGTH
@@ -158,39 +174,20 @@ func (g *Game) Layout(outsideWidth, outsideHeight int) (screenWidth, screenHeigh
 func main() {
 
 	//reader := bufio.NewReader(os.Stdin)
-	var input input
-	// input.algorithm = readAlgorithm(reader)
+
+	// algorithm = readAlgorithm(reader)
 	// n := readCount(reader)
 	// data = createSlice(n)
-	// input.delay = readDelay(reader)
+	// delay = readDelay(reader)
 
-	input.algorithm = "1"
-	n := 20
-	data = createSlice(n)
-	input.delay = 1
+	algorithm = "2"
+	n := 10
+	//data = createSlice(n)
+	data = []float64{4, 3, 2, 1}
+	delay = 100
 
 	barWidth = (float64(WIDTH) - 20 - (float64(n) * barSpacing)) / float64(n)
 	barHeight = float64(HEIGTH) / float64(n)
-
-	switch input.algorithm {
-	case "1":
-	//bubbleSort(data, input.delay, progress)
-
-	// case "2":
-	// 	data = mergeSort(data)
-
-	// 	case "3":
-	// 		pl(data)
-	// 		minHeap := NewMinHeap(data)
-	// 		minHeap.sort(len(data))
-	// 		minHeap.print()
-	// 		fmt.Scanln()
-	// 	case "4":
-	// 		pl("Quick sort")
-	default:
-		pl("Invalid input")
-		return
-	}
 
 	//Set up the game window
 	ebiten.SetWindowSize(WIDTH, HEIGTH)
@@ -200,9 +197,11 @@ func main() {
 		i:         0,
 		j:         0,
 		k:         0,
-		delay:     input.delay,
+		delay:     delay,
 		sorted:    false,
 		numSorted: 0,
+		algorithm: algorithm,
+		varHeight: 0,
 	}
 
 	//Start the game loop

@@ -41,9 +41,9 @@ func mergeSortStep(g *Game, data []float64, delay int, start int, end int, mid i
 		k++
 	}
 
-	g.start = start
-	g.end = end
-	g.mid = mid
+	g.i = start
+	g.j = end
+	g.k = mid
 
 	time.Sleep(time.Duration(delay) * time.Millisecond)
 }
