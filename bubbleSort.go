@@ -1,5 +1,7 @@
 package main
 
+import "fmt"
+
 func bubbleSortStep(g *Game, data []float64, delay int, i int, j int, k int) {
 	if i >= len(data)-1 {
 		g.sorted = true
@@ -16,7 +18,7 @@ func bubbleSortStep(g *Game, data []float64, delay int, i int, j int, k int) {
 	// swap
 	if data[i] > data[i+1] {
 		data[i], data[i+1] = data[i+1], data[i]
-
+		g.swaps++
 	}
 	// current comparison
 	if i < len(data)-1 {
@@ -32,4 +34,7 @@ func bubbleSortStep(g *Game, data []float64, delay int, i int, j int, k int) {
 	if lastUnsorted == 1 {
 		g.sorted = true
 	}
+	fmt.Println("swap: ", g.swaps)
+	g.comparisons++
+	fmt.Println("comparison: ", g.comparisons)
 }

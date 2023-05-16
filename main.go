@@ -18,6 +18,11 @@ const (
 )
 
 // type bar struct {
+// 	rect  pixel.Rect
+// 	color color.Color
+// }
+
+// type bar struct {
 // 	rect  *ebiten.Image
 // 	color color.RGBA
 // }
@@ -30,10 +35,15 @@ type Game struct {
 	numSorted int
 	algorithm string
 
+	iterations   int
+	swaps        int
+	comparisons  int
+	array_access int
+
 	varHeight float64
-	tmp       []float64
-	left      []float64 // left split to be compared (highlight)
-	right     []float64 // right split to be compared (highlight)
+	// tmp       []float64
+	// left      []float64 // left split to be compared (highlight)
+	// right     []float64 // right split to be compared (highlight)
 }
 
 var (
@@ -109,7 +119,7 @@ func createSlice(size int) []float64 {
 
 // ----------------- Sleep  -----------------
 func Sleep(n int) {
-	time.Sleep(time.Duration(n) * time.Second)
+	time.Sleep(time.Duration(n) * time.Nanosecond)
 }
 
 // ----------------- Update Game -----------------
@@ -126,8 +136,7 @@ func (g *Game) Update() error {
 			g.numSorted++
 		}
 	} else if g.algorithm == "2" {
-		mergeSort(g, g.data)
-		g.sorted = true
+
 	}
 	return nil
 }
@@ -181,10 +190,10 @@ func main() {
 	// delay = readDelay(reader)
 
 	algorithm = "2"
-	n := 10
-	//data = createSlice(n)
-	data = []float64{4, 3, 2, 1}
-	delay = 100
+	n := 100
+	data = createSlice(n)
+	//data = []float64{4, 3, 2, 1}
+	delay = 10
 
 	barWidth = (float64(WIDTH) - 20 - (float64(n) * barSpacing)) / float64(n)
 	barHeight = float64(HEIGTH) / float64(n)
@@ -193,15 +202,19 @@ func main() {
 	ebiten.SetWindowSize(WIDTH, HEIGTH)
 	ebiten.SetWindowTitle("Shuffled Integers")
 	game := &Game{
-		data:      data,
-		i:         0,
-		j:         0,
-		k:         0,
-		delay:     delay,
-		sorted:    false,
-		numSorted: 0,
-		algorithm: algorithm,
-		varHeight: 0,
+		data:         data,
+		i:            0,
+		j:            0,
+		k:            0,
+		delay:        delay,
+		sorted:       false,
+		numSorted:    0,
+		algorithm:    algorithm,
+		varHeight:    0,
+		swaps:        0,
+		comparisons:  0,
+		array_access: 0,
+		iterations:   0,
 	}
 
 	//Start the game loop
