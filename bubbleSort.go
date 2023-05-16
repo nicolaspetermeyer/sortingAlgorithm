@@ -2,7 +2,7 @@ package main
 
 import "fmt"
 
-func bubbleSortStep(g *Game, data []float64, delay int, i int, j int, k int) {
+func bubbleSortStep(g *Game, i int) {
 	if i >= len(data)-1 {
 		g.sorted = true
 		return
@@ -22,12 +22,12 @@ func bubbleSortStep(g *Game, data []float64, delay int, i int, j int, k int) {
 	}
 	// current comparison
 	if i < len(data)-1 {
-		g.j = int(data[i])
-		g.k = int(data[i+1])
+		g.value = int(data[i])
+		g.nextValue = int(data[i+1])
 	}
 	// current index iteration
 	i++
-	g.i = i
+	g.index = i
 	Sleep(delay)
 
 	// last comparison
