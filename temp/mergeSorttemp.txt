@@ -1,0 +1,118 @@
+package main
+
+import "fmt"
+
+type Interval struct {
+	start  int
+	end    int
+	length int
+}
+
+var intervals_m []Interval
+var left_interval_m, right_interval_m Interval
+var interval_length_m int
+var left_array_m, right_array_m []int
+var left_pointer_m, right_pointer_m, final_pointer_m int
+
+func initNewIntervaltMerge(g *Game) {
+	leftIntervalIndex := len(intervals_m) - 1
+	left_interval_m = intervals_m[leftIntervalIndex]
+	intervals_m = intervals_m[:leftIntervalIndex]
+
+	rightIntervalIndex := len(intervals_m) - 1
+	right_interval_m = intervals_m[rightIntervalIndex]
+	intervals_m = intervals_m[:rightIntervalIndex]
+
+	interval_length_m := left_interval_m.length
+
+	left_pointer_m := 0
+	right_pointer_m := 0
+	final_pointer_m := left_interval_m.start
+
+	completed_m := false
+
+	if left_interval_m == (struct {
+		start  int
+		end    int
+		length int
+	}{}) || right_interval_m == (struct {
+		start  int
+		end    int
+		length int
+	}{}) {
+		g.sorted = true
+	} else {
+		loadTempArrayMerge(g)
+	}
+
+}
+
+func updateMerge(g *Game) {
+	if !g.sorted {
+		if (left_pointer_m < interval_length_m) && (right_pointer_m < interval_length_m) {
+			if left_array_m[left_pointer_m] <= right_array_m[right_pointer_m] {
+				data[final_pointer_m] = float64(left_array_m[left_pointer_m])
+				final_pointer_m++
+				left_pointer_m++
+
+				g.array_access += 4
+				g.comparisons++
+			} else {
+				data[final_pointer_m] = float64(right_array_m[right_pointer_m])
+				final_pointer_m++
+				right_pointer_m++
+
+				g.array_access += 2
+			}
+		} else if left_pointer_m < interval_length_m {
+			data[final_pointer_m] = float64(left_array_m[left_pointer_m])
+			final_pointer_m++
+			left_pointer_m++
+
+			g.array_access += 2
+		} else if right_pointer_m < interval_length_m {
+			data[final_pointer_m] = float64(right_array_m[right_pointer_m])
+			final_pointer_m++
+			right_pointer_m++
+
+			g.array_access += 2
+		} else {
+			fmt.Println("New interval: ", left_interval_m.start, right_interval_m.end)
+			intervals_m = append([]Interval{{start: left_interval_m.start, end: right_interval_m.end, length: interval_length_m * 2}}, intervals_m...)
+			initNewIntervaltMerge(g)
+		}
+		g.iterations++
+	} else {
+		g.sorted = true
+	}
+}
+
+func initMerge(g *Game) {
+	fmt.Printf("start merge sort")
+	fmt.Println(g.data)
+
+	intervals_m := make([]Interval, 0, len(g.data))
+	for i := 0; i < len(g.data); i++ {
+		interval := Interval{
+			start:  i,
+			end:    i,
+			length: 1,
+		}
+		intervals_m = append([]Interval{interval}, intervals_m...)
+	}
+	initNewIntervaltMerge(g)
+}
+
+func loadTempArrayMerge(g *Game) {
+	left_array_m := make([]int, 0)
+	for i := left_interval_m.start; i <= left_interval_m.end; i++ {
+		left_array_m = append(left_array_m, int(g.data[i]))
+	}
+
+	right_array_m := make([]int, 0)
+	for i := right_interval_m.start; i <= right_interval_m.end; i++ {
+		right_array_m = append(right_array_m, int(g.data[i]))
+	}
+
+	g.array_access += 2 * interval_length_m
+}
