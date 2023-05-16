@@ -35,15 +35,14 @@ type Game struct {
 	numSorted int
 	algorithm string
 
+	// sort infos
 	iterations   int
 	swaps        int
 	comparisons  int
 	array_access int
 
-	varHeight float64
-	// tmp       []float64
-	// left      []float64 // left split to be compared (highlight)
-	// right     []float64 // right split to be compared (highlight)
+	// insertion sort
+	current int
 }
 
 var (
@@ -119,7 +118,7 @@ func createSlice(size int) []float64 {
 
 // ----------------- Sleep  -----------------
 func Sleep(n int) {
-	time.Sleep(time.Duration(n) * time.Nanosecond)
+	time.Sleep(time.Duration(n) * time.Millisecond)
 }
 
 // ----------------- Update Game -----------------
@@ -136,9 +135,15 @@ func (g *Game) Update() error {
 			g.numSorted++
 		}
 	} else if g.algorithm == "2" {
-
+		if !g.sorted {
+			insertionSort(g)
+			if g.current < len(g.data) {
+				g.current++
+			}
+		}
 	}
 	return nil
+
 }
 
 // ----------------- Draw Game -----------------
@@ -169,7 +174,15 @@ func (g *Game) Draw(screen *ebiten.Image) {
 
 			x := 10 + (barWidth+barSpacing)*float64(i)
 			y := HEIGTH - num*barHeight
-			vector.DrawFilledRect(screen, float32(x), float32(y), float32(barWidth), float32(num*barHeight), color.White, antialias)
+			if num == float64(g.j) {
+				vector.DrawFilledRect(screen, float32(x), float32(y), float32(barWidth), float32(num*barHeight), color.RGBA{0xff, 0x00, 0x00, 0xff}, antialias)
+			} else if num == float64(g.k) {
+				vector.DrawFilledRect(screen, float32(x), float32(y), float32(barWidth), float32(num*barHeight), color.RGBA{0x00, 0x00, 0xff, 0xff}, antialias)
+			} else if num == float64(g.i) {
+				vector.DrawFilledRect(screen, float32(x), float32(y), float32(barWidth), float32(num*barHeight), color.RGBA{0x00, 0x00, 0xff, 0xff}, antialias)
+			} else {
+				vector.DrawFilledRect(screen, float32(x), float32(y), float32(barWidth), float32(num*barHeight), color.White, antialias)
+			}
 		}
 	}
 }
@@ -193,7 +206,7 @@ func main() {
 	n := 100
 	data = createSlice(n)
 	//data = []float64{4, 3, 2, 1}
-	delay = 10
+	delay = 100
 
 	barWidth = (float64(WIDTH) - 20 - (float64(n) * barSpacing)) / float64(n)
 	barHeight = float64(HEIGTH) / float64(n)
@@ -210,11 +223,12 @@ func main() {
 		sorted:       false,
 		numSorted:    0,
 		algorithm:    algorithm,
-		varHeight:    0,
 		swaps:        0,
 		comparisons:  0,
 		array_access: 0,
 		iterations:   0,
+
+		current: 1,
 	}
 
 	//Start the game loop
