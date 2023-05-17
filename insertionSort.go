@@ -16,6 +16,7 @@ func insertionSort(g *Game) {
 	for j >= 0 && data[j] > key {
 		data[j+1] = data[j]
 		j--
+
 	}
 	data[j+1] = key
 
@@ -23,11 +24,4 @@ func insertionSort(g *Game) {
 		g.sorted = true
 	}
 	Sleep(delay)
-
 }
-
-// notes
-
-// if not, swap data[1] and data[0] and return data
-// Is data [2] sorted?
-// if not, swap data[2] and data[1]

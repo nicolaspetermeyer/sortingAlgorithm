@@ -3,8 +3,8 @@ module github.com/nicolaspetermeyer/yourvis
 go 1.20
 
 require (
-	github.com/faiface/pixel v0.10.0
 	github.com/hajimehoshi/ebiten/v2 v2.5.4
+	github.com/hajimehoshi/oto/v2 v2.4.0
 )
 
 require (
