@@ -7,11 +7,13 @@ import (
 	"log"
 	"math/rand"
 	"os"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
 
 	"github.com/hajimehoshi/ebiten/v2"
+	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
 	"github.com/hajimehoshi/ebiten/v2/vector"
 	"github.com/hajimehoshi/oto/v2"
 )
@@ -20,7 +22,7 @@ var pl = fmt.Println
 
 const (
 	WIDTH  = 1280
-	HEIGTH = 720
+	HEIGTH = 730
 )
 
 type Game struct {
@@ -30,7 +32,6 @@ type Game struct {
 	sorted                           bool
 	numSorted                        int
 	algorithm                        string
-	color                            []color.RGBA
 
 	// sort infos
 	iterations   int
@@ -43,6 +44,7 @@ type Game struct {
 	f       int
 	c       *oto.Context
 	wg      sync.WaitGroup
+	m       sync.Mutex
 }
 
 var (
@@ -56,8 +58,8 @@ var (
 	co         color.RGBA
 )
 
-func mapFreq(num, n int) float64 {
-	return float64(num*1140/n + 60)
+func MapFreq(num, n int) float64 {
+	return float64(num*2000/n + 100)
 }
 
 // ---------------- Choose Algorithm  -----------------
@@ -77,35 +79,35 @@ func readAlgorithm(reader *bufio.Reader) string {
 	return strings.TrimSpace(algorithm)
 }
 
-// // ----------------- Read Dataset Size  -----------------
-// func readCount(reader *bufio.Reader) int {
-// 	pl("Enter n: ")
+// ----------------- Read Dataset Size  -----------------
+func readCount(reader *bufio.Reader) int {
+	pl("Enter n: ")
 
-// 	n, _ := reader.ReadString('\n')
-// 	n = strings.TrimSpace(n)
-// 	size, err := strconv.Atoi(n)
-// 	if err != nil {
-// 		log.Fatal(err)
-// 	} else {
-// 		fmt.Println("You entered: " + n)
-// 	}
-// 	return size
-// }
+	n, _ := reader.ReadString('\n')
+	n = strings.TrimSpace(n)
+	size, err := strconv.Atoi(n)
+	if err != nil {
+		log.Fatal(err)
+	} else {
+		fmt.Println("You entered: " + n)
+	}
+	return size
+}
 
-// // ----------------- Read Delay  -----------------
-// func readDelay(reader *bufio.Reader) int {
-// 	pl("Enter delay in ms: ")
+// ----------------- Read Delay  -----------------
+func readDelay(reader *bufio.Reader) int {
+	pl("Enter delay in ms: ")
 
-// 	n, _ := reader.ReadString('\n')
-// 	n = strings.TrimSpace(n)
-// 	delay, err := strconv.Atoi(n)
-// 	if err != nil {
-// 		log.Fatal(err)
-// 	} else {
-// 		fmt.Println("You entered: " + n)
-// 	}
-// 	return delay
-// }
+	n, _ := reader.ReadString('\n')
+	n = strings.TrimSpace(n)
+	delay, err := strconv.Atoi(n)
+	if err != nil {
+		log.Fatal(err)
+	} else {
+		fmt.Println("You entered: " + n)
+	}
+	return delay
+}
 
 // ----------------- Create Slice  -----------------
 func createSlice(size int) []float64 {
@@ -129,24 +131,28 @@ func Sleep(n int) {
 func (g *Game) Update() error {
 
 	if g.sorted {
-
 		return nil
 	}
 
 	if g.algorithm == "1" {
+		algorithm = "Bubble sort"
 		bubbleSortStep(g, g.index)
 		if g.index >= len(data)-1-g.numSorted {
 			g.index = 0
 			g.numSorted++
 		}
 	} else if g.algorithm == "2" {
+		algorithm = "Insertion sort"
+
 		if !g.sorted {
 			insertionSort(g)
-			if g.index < len(g.data) {
-				g.index++
-			}
 		}
+		if g.index < len(g.data) {
+			g.index++
+		}
+
 	} else if g.algorithm == "3" {
+		algorithm = "Selection sort"
 		if !g.sorted {
 			selectionSort(g, g.numSorted)
 
@@ -167,17 +173,6 @@ func (g *Game) Update() error {
 func (g *Game) Draw(screen *ebiten.Image) {
 
 	for i, num := range g.data {
-		if !g.sorted {
-			g.wg.Add(1)
-			go func() {
-				defer g.wg.Done()
-				p := play(g.c, mapFreq(int(num), len(g.data)), time.Duration(g.delay)*time.Millisecond, *channelCount, g.f)
-				g.players = append(g.players, p)
-				Sleep(g.delay)
-			}()
-
-		}
-		co := g.color[i]
 		x := 10 + (barWidth+barSpacing)*float64(i)
 		y := HEIGTH - num*barHeight
 
@@ -186,6 +181,10 @@ func (g *Game) Draw(screen *ebiten.Image) {
 				co = color.RGBA{0xff, 0x00, 0x00, 0xff} //red
 			} else if num == float64(g.nextValue) {
 				co = color.RGBA{0x00, 0x00, 0xff, 0xff} //blue
+			} else if i >= len(g.data)-g.numSorted {
+				co = color.RGBA{0x00, 0xff, 0xff, 0xff} //light blue
+			} else {
+				co = color.RGBA{0xff, 0xff, 0xff, 0xff} //white
 			}
 		}
 		vector.DrawFilledRect(screen, float32(x), float32(y), float32(barWidth), float32(num*barHeight), co, antialias)
@@ -197,6 +196,10 @@ func (g *Game) Draw(screen *ebiten.Image) {
 				co = color.RGBA{0x00, 0x00, 0xff, 0xff} //blue
 			} else if num == float64(g.i) {
 				co = color.RGBA{0x00, 0xff, 0x00, 0xff} //green
+			} else if num == float64(g.temp) {
+				co = color.RGBA{0x80, 0x00, 0x00, 0xff} //dark red
+			} else {
+				co = color.RGBA{0xff, 0xff, 0xff, 0xff} //white
 			}
 		}
 		vector.DrawFilledRect(screen, float32(x), float32(y), float32(barWidth), float32(num*barHeight), co, antialias)
@@ -206,6 +209,10 @@ func (g *Game) Draw(screen *ebiten.Image) {
 				co = color.RGBA{0x00, 0x00, 0xff, 0xff} //blue
 			} else if num == float64(g.data[g.temp]) {
 				co = color.RGBA{0x80, 0x00, 0x00, 0xff} //red
+			} else if i < g.numSorted {
+				co = color.RGBA{0x00, 0xff, 0xff, 0xff} //light blue
+			} else {
+				co = color.RGBA{0xff, 0xff, 0xff, 0xff} //white
 			}
 		}
 		vector.DrawFilledRect(screen, float32(x), float32(y), float32(barWidth), float32(num*barHeight), co, antialias)
@@ -217,45 +224,47 @@ func (g *Game) Draw(screen *ebiten.Image) {
 			vector.DrawFilledRect(screen, float32(x), float32(y), float32(barWidth), float32(num*barHeight), color.RGBA{0x00, 0xff, 0x00, 0xff}, antialias)
 		}
 	}
+	msg := fmt.Sprint(algorithm, " - ", g.iterations, " Iterations, ", g.comparisons, " Comparisons, ", g.delay, " ms delay")
+	ebitenutil.DebugPrintAt(screen, msg, 10, 10)
 }
 
-//----------------- Game Layout -----------------
-
+// ----------------- Game Layout -----------------
 func (g *Game) Layout(outsideWidth, outsideHeight int) (screenWidth, screenHeight int) {
 	return WIDTH, HEIGTH
 }
 
-func (g *Game) newContext() {
+func (g *Game) newContext() error {
+
+	switch *format {
+	case "f32le":
+		g.f = oto.FormatFloat32LE
+	case "u8":
+		g.f = oto.FormatUnsignedInt8
+	case "s16le":
+		g.f = oto.FormatSignedInt16LE
+	default:
+		return fmt.Errorf("format must be u8, s16le, or f32le but: %s", *format)
+	}
+
 	c, ready, err := oto.NewContext(*sampleRate, *channelCount, g.f)
 	if err != nil {
-		return
+		return err
 	}
 
 	g.c = c
 	<-ready
-}
-
-func (g *Game) initColor() {
-	g.color = make([]color.RGBA, len(g.data))
-	for i := range g.color {
-		g.color[i] = color.RGBA{0xff, 0xff, 0xff, 0xff} // Default color is white
-	}
+	return nil
 }
 
 func main() {
 
 	reader := bufio.NewReader(os.Stdin)
 	algorithm = readAlgorithm(reader)
-	// n := readCount(reader)
-	// data = createSlice(n)
-	// delay = readDelay(reader)
-
-	//algorithm = "2"
-	n := 100
+	n := readCount(reader)
+	delay = readDelay(reader)
 	data = createSlice(n)
-	delay = 10
 	barWidth = (float64(WIDTH) - 20 - (float64(n) * barSpacing)) / float64(n)
-	barHeight = float64(HEIGTH) / float64(n)
+	barHeight = float64(HEIGTH-10) / float64(n)
 
 	//Set up the game window
 	ebiten.SetWindowSize(WIDTH, HEIGTH)
@@ -278,7 +287,6 @@ func main() {
 	}
 
 	go game.newContext()
-	go game.initColor()
 
 	//Start the game loop
 	if err := ebiten.RunGame(game); err != nil {

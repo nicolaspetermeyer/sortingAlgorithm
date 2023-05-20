@@ -1,6 +1,9 @@
 package main
 
-import "fmt"
+import (
+	"runtime"
+	"time"
+)
 
 func bubbleSortStep(g *Game, i int) {
 	if i >= len(data)-1 {
@@ -18,8 +21,22 @@ func bubbleSortStep(g *Game, i int) {
 	// swap
 	if data[i] > data[i+1] {
 		data[i], data[i+1] = data[i+1], data[i]
-		g.swaps++
 	}
+
+	g.wg.Add(1)
+	go func(index int) {
+		defer g.wg.Done()
+		frequency := MapFreq(int(g.data[index]), len(g.data))
+		p := play(g.c, frequency, time.Duration(g.delay)*time.Millisecond, *channelCount, g.f)
+		g.m.Lock()
+		g.players = append(g.players, p)
+		g.m.Unlock()
+		Sleep(g.delay)
+	}(g.index)
+	Sleep(g.delay)
+	g.wg.Wait()
+	runtime.KeepAlive(g.players)
+
 	// current comparison
 	if i < len(data)-1 {
 		g.value = int(data[i])
@@ -28,13 +45,11 @@ func bubbleSortStep(g *Game, i int) {
 	// current index iteration
 	i++
 	g.index = i
-	Sleep(delay)
 
 	// last comparison
 	if lastUnsorted == 1 {
 		g.sorted = true
 	}
-	fmt.Println("swap: ", g.swaps)
 	g.comparisons++
-	fmt.Println("comparison: ", g.comparisons)
+	g.iterations = g.numSorted
 }
